@@ -25,7 +25,18 @@
       "tags": [],
       "addedAt": "2026-02-22T17:33:04.168Z",
       "practiceCount": 0
+    },
+    {
+      "id": "e3c985d1-df86-48db-bda6-d97aa740f350",
+      "title": "lirowing",
+      "artist": "SRV",
+      "tuning": "Standard",
+      "difficulty": 3,
+      "sections": [],
+      "tags": [],
+      "addedAt": "2026-02-22T20:46:22.490Z",
+      "practiceCount": 0
     }
   ],
-  "updatedAt": "2026-02-22T18:21:44.854Z"
+  "updatedAt": "2026-02-22T20:46:22.490Z"
 }

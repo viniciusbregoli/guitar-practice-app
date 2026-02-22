@@ -391,8 +391,18 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
     return `${m}:${String(s).padStart(2, '0')}`;
   };
 
+  const seekBy = (seconds: number) => {
+    const video = videoRef.current;
+    const maxDuration = duration > 0 ? duration : (video?.duration ?? 0);
+    if (!maxDuration) return;
+    const base = video?.currentTime ?? currentTime;
+    const target = Math.max(0, Math.min(maxDuration, base + seconds));
+    if (video) video.currentTime = target;
+    setCurrentTime(target);
+  };
+
   return (
-    <div className="max-w-6xl mx-auto px-6 pt-6 md:pt-10">
+    <div className="w-full max-w-none mx-auto px-2 md:px-3 lg:px-4 pt-5 md:pt-7">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button onClick={onBack} className="p-2 rounded-lg hover:bg-surface-raised text-text-muted hover:text-text-primary transition-all">
@@ -406,260 +416,280 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
         </div>
       </div>
 
-      {/* Video area */}
-      <div className="relative rounded-xl overflow-hidden bg-surface border border-border mb-4">
-        {videoSrc ? (
-          <video ref={videoRef} src={videoSrc} className="w-full aspect-video" onClick={togglePlay} />
-        ) : (
-          <label className="flex flex-col items-center justify-center aspect-video cursor-pointer hover:bg-surface-raised transition-colors">
-            <svg className="w-12 h-12 text-text-muted mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
-              <rect x="2" y="6" width="20" height="12" rx="2" />
-              <path d="M12 9v6M9 12h6" />
-            </svg>
-            <span className="text-sm text-text-muted">Load a video file</span>
-            <input type="file" accept="video/*" className="hidden" onChange={handleFileSelect} />
-          </label>
+      <div className={`grid gap-3 xl:gap-4 ${videoSrc ? 'xl:grid-cols-[13.5rem_minmax(0,1fr)_14rem] xl:items-start' : ''}`}>
+        {videoSrc && (
+          <aside className="rounded-xl border border-border bg-surface/80 p-3 xl:sticky xl:top-6 xl:max-h-[calc(100dvh-8rem)] xl:overflow-y-auto">
+            <h3 className="text-xs uppercase tracking-widest text-text-muted mb-3">Playback</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs uppercase tracking-widest text-text-muted mb-2 block">Speed: {Math.round(playbackRate * 100)}%</label>
+                <input type="range" min={25} max={200} value={playbackRate * 100}
+                  onChange={e => setPlaybackRate(Number(e.target.value) / 100)}
+                  className="w-full h-1 bg-border rounded-full appearance-none cursor-pointer accent-amber-500
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
+                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500" />
+                <div className="flex gap-1 mt-1 flex-wrap">
+                  {[0.5, 0.75, 1, 1.25].map(r => (
+                    <button key={r} onClick={() => setPlaybackRate(r)}
+                      className={`text-xs px-2 py-0.5 rounded ${playbackRate === r ? 'bg-amber-500/15 text-amber-400' : 'text-text-muted hover:text-text-secondary'}`}>
+                      {r === 1 ? '1x' : `${r}x`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs uppercase tracking-widest text-text-muted mb-2 block">Volume: {Math.round(volume * 100)}%</label>
+                <input type="range" min={0} max={1} step={0.01} value={volume}
+                  onChange={e => setVolume(Number(e.target.value))}
+                  className="w-full h-1 bg-border rounded-full appearance-none cursor-pointer accent-amber-500
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
+                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500" />
+                <div className="flex gap-1 mt-1 flex-wrap">
+                  {[0.25, 0.5, 0.75, 1].map(v => (
+                    <button key={v} onClick={() => setVolume(v)}
+                      className={`text-xs px-2 py-0.5 rounded ${volume === v ? 'bg-amber-500/15 text-amber-400' : 'text-text-muted hover:text-text-secondary'}`}>
+                      {Math.round(v * 100)}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs uppercase tracking-widest text-text-muted mb-2 block">
+                  Pitch: {pitchShift > 0 ? `+${pitchShift}` : pitchShift} st
+                </label>
+                <input type="range" min={-6} max={6} value={pitchShift}
+                  onChange={e => setPitchShift(Number(e.target.value))}
+                  className="w-full h-1 bg-border rounded-full appearance-none cursor-pointer accent-amber-500
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
+                    [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500" />
+                <div className="text-xs text-text-muted mt-1">(Pitch shift requires Web Audio)</div>
+              </div>
+            </div>
+          </aside>
         )}
-      </div>
 
-      {videoSrc && (
-        <>
-          {/* ── Timeline ── */}
-          <div className="mb-5">
-            {/* Track — click to seek, drag handles to adjust loop edges */}
-            <div
-              ref={timelineRef}
-              className="relative h-11 rounded-lg overflow-hidden bg-surface border border-border cursor-pointer select-none mb-2"
-              onMouseDown={e => {
-                e.preventDefault();
-                if (e.button !== 0) return;
-                if (!duration) return;
-                const rect = e.currentTarget.getBoundingClientRect();
-                const t = Math.max(0, Math.min(duration, ((e.clientX - rect.left) / rect.width) * duration));
-                if (videoRef.current) videoRef.current.currentTime = t;
-                setCurrentTime(t);
-              }}
-            >
-              {/* Played portion */}
-              <div
-                className="absolute top-0 left-0 h-full bg-white/[0.03] pointer-events-none"
-                style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
-              />
-
-              {/* Saved sections */}
-              {sections.map(s => (
-                <div
-                  key={s.id}
-                  className={`absolute top-0 h-full cursor-pointer transition-colors ${
-                    activeSection === s.id
-                      ? 'bg-sky-500/30 border-l-2 border-r-2 border-sky-400'
-                      : 'bg-surface-raised/50 border-l border-r border-border hover:bg-surface-raised'
-                  }`}
-                  style={{ left: `${(s.startTime / duration) * 100}%`, width: `${((s.endTime - s.startTime) / duration) * 100}%` }}
-                  onClick={e => { e.stopPropagation(); activateSection(s); }}
-                  title={s.name}
-                />
-              ))}
-
-              {/* Active loop region + edge handles */}
-              {loopStart !== null && loopEnd !== null && (
-                <>
-                  {/* Fill — pointer-events-none so clicks through to timeline */}
-                  <div
-                    className="absolute top-0 h-full bg-amber-500/20 pointer-events-none"
-                    style={{ left: `${(loopStart / duration) * 100}%`, width: `${((loopEnd - loopStart) / duration) * 100}%` }}
-                  />
-                  {/* Left (start) handle */}
-                  <div
-                    className="absolute top-0 h-full w-2 -translate-x-1/2 cursor-ew-resize z-10 flex items-center justify-center hover:scale-x-150 transition-transform"
-                    style={{ left: `${(loopStart / duration) * 100}%` }}
-                    onMouseDown={e => { e.preventDefault(); e.stopPropagation(); dragModeRef.current = 'start'; }}
-                  >
-                    <div className="w-0.5 h-5/6 rounded-full bg-amber-400" />
-                  </div>
-                  {/* Right (end) handle */}
-                  <div
-                    className="absolute top-0 h-full w-2 -translate-x-1/2 cursor-ew-resize z-10 flex items-center justify-center hover:scale-x-150 transition-transform"
-                    style={{ left: `${(loopEnd / duration) * 100}%` }}
-                    onMouseDown={e => { e.preventDefault(); e.stopPropagation(); dragModeRef.current = 'end'; }}
-                  >
-                    <div className="w-0.5 h-5/6 rounded-full bg-amber-400" />
-                  </div>
-                </>
-              )}
-
-              {/* Playhead */}
-              <div
-                className="absolute top-0 w-px h-full bg-white/50 pointer-events-none"
-                style={{ left: `${duration ? (currentTime / duration) * 100 : 0}%` }}
-              />
-            </div>
-
-            {/* Loop mark controls */}
-            <div className="flex flex-wrap items-center gap-2 mb-1.5">
-              <button
-                onClick={markLoopStart}
-                className="px-3 py-1.5 rounded-lg text-xs border border-amber-500/35 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-all"
-              >
-                Start loop
-              </button>
-
-              {loopStart !== null && loopEnd === null && (
-                <>
-                  <span className="text-xs text-amber-400/70 tabular-nums">
-                    start {formatTime(loopStart)}
-                  </span>
-                  <button
-                    onClick={markLoopEnd}
-                    className="px-3 py-1.5 rounded-lg text-xs border border-amber-500/35 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-all"
-                  >
-                    Finish loop
-                  </button>
-                  <button
-                    onClick={clearLoop}
-                    className="px-2.5 py-1.5 rounded-lg text-xs border border-border text-text-muted hover:text-text-primary hover:bg-surface-raised transition-all"
-                  >
-                    Cancel
-                  </button>
-                </>
-              )}
-
-              {loopStart !== null && loopEnd !== null && (
-                <span className="text-xs text-amber-400/70 tabular-nums">
-                  {formatTime(loopStart)} → {formatTime(loopEnd)}
-                </span>
-              )}
-            </div>
-
-            {/* Section name labels */}
-            {sections.length > 0 && (
-              <div className="relative h-4 mb-0.5">
-                {sections.map(s => (
-                  <div
-                    key={s.id}
-                    className="absolute text-[9px] text-text-muted overflow-hidden whitespace-nowrap leading-4"
-                    style={{ left: `${(s.startTime / duration) * 100}%`, maxWidth: `${Math.max(2, (s.endTime - s.startTime) / duration * 100)}%` }}
-                  >
-                    {s.name}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Time row */}
-            <div className="flex items-center justify-between text-xs text-text-muted tabular-nums">
-              <span>{formatTime(currentTime)}</span>
-              {loopStart !== null && loopEnd !== null ? (
-                <span className="text-amber-400/70">
-                  {isLooping ? '↻' : '↺'} {formatTime(loopStart)} → {formatTime(loopEnd)}
-                </span>
-              ) : (
-                <span className="text-text-muted/40 text-[10px]">click to seek · use Start/Finish loop</span>
-              )}
-              <span>{formatTime(duration)}</span>
-            </div>
-          </div>
-
-          {/* Transport */}
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <button onClick={() => { if (videoRef.current) videoRef.current.currentTime = Math.max(0, currentTime - 5); }}
-              className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-raised transition-all">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12.5 8V4L6 9.5l6.5 5.5v-4c3.5 0 6.5 1.5 8 5-1-4.5-4-8-8-8z" />
-              </svg>
-            </button>
-
-            <button onClick={togglePlay}
-              className="w-14 h-14 rounded-full bg-amber-500 text-void flex items-center justify-center hover:bg-amber-400 transition-all">
-              {isPlaying ? (
-                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16" rx="1" />
-                  <rect x="14" y="4" width="4" height="16" rx="1" />
+        <div className="min-w-0">
+          {/* Video area */}
+          <div className="relative rounded-xl overflow-hidden bg-surface border border-border mb-4">
+            {videoSrc ? (
+              <video ref={videoRef} src={videoSrc} className="w-full aspect-video" onClick={togglePlay} />
+            ) : (
+              <label className="flex flex-col items-center justify-center aspect-video cursor-pointer hover:bg-surface-raised transition-colors">
+                <svg className="w-12 h-12 text-text-muted mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
+                  <rect x="2" y="6" width="20" height="12" rx="2" />
+                  <path d="M12 9v6M9 12h6" />
                 </svg>
-              ) : (
-                <svg className="w-6 h-6 ml-0.5" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="6 3 20 12 6 21" />
-                </svg>
-              )}
-            </button>
-
-            <button onClick={() => { if (videoRef.current) videoRef.current.currentTime = Math.min(duration, currentTime + 5); }}
-              className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-raised transition-all">
-              <svg className="w-5 h-5 scale-x-[-1]" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12.5 8V4L6 9.5l6.5 5.5v-4c3.5 0 6.5 1.5 8 5-1-4.5-4-8-8-8z" />
-              </svg>
-            </button>
-
-            {/* Loop toggle — only visible when a region exists */}
-            {loopStart !== null && loopEnd !== null && (
-              <button
-                onClick={() => setIsLooping(l => !l)}
-                className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-                  isLooping
-                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40'
-                    : 'bg-surface-raised text-text-muted border border-border hover:text-text-primary'
-                }`}
-              >
-                {isLooping ? '↻ Looping' : '↺ Loop off'}
-              </button>
-            )}
-          </div>
-
-          {/* Speed, Volume & Pitch */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            <div>
-              <label className="text-xs uppercase tracking-widest text-text-muted mb-2 block">Speed: {Math.round(playbackRate * 100)}%</label>
-              <input type="range" min={25} max={200} value={playbackRate * 100}
-                onChange={e => setPlaybackRate(Number(e.target.value) / 100)}
-                className="w-full h-1 bg-border rounded-full appearance-none cursor-pointer accent-amber-500
-                  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
-                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500" />
-              <div className="flex gap-1 mt-1">
-                {[0.5, 0.75, 1, 1.25].map(r => (
-                  <button key={r} onClick={() => setPlaybackRate(r)}
-                    className={`text-xs px-2 py-0.5 rounded ${playbackRate === r ? 'bg-amber-500/15 text-amber-400' : 'text-text-muted hover:text-text-secondary'}`}>
-                    {r === 1 ? '1x' : `${r}x`}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="text-xs uppercase tracking-widest text-text-muted mb-2 block">Volume: {Math.round(volume * 100)}%</label>
-              <input type="range" min={0} max={1} step={0.01} value={volume}
-                onChange={e => setVolume(Number(e.target.value))}
-                className="w-full h-1 bg-border rounded-full appearance-none cursor-pointer accent-amber-500
-                  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
-                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500" />
-              <div className="flex gap-1 mt-1">
-                {[0.25, 0.5, 0.75, 1].map(v => (
-                  <button key={v} onClick={() => setVolume(v)}
-                    className={`text-xs px-2 py-0.5 rounded ${volume === v ? 'bg-amber-500/15 text-amber-400' : 'text-text-muted hover:text-text-secondary'}`}>
-                    {Math.round(v * 100)}%
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="text-xs uppercase tracking-widest text-text-muted mb-2 block">
-                Pitch: {pitchShift > 0 ? `+${pitchShift}` : pitchShift} st
+                <span className="text-sm text-text-muted">Load a video file</span>
+                <input type="file" accept="video/*" className="hidden" onChange={handleFileSelect} />
               </label>
-              <input type="range" min={-6} max={6} value={pitchShift}
-                onChange={e => setPitchShift(Number(e.target.value))}
-                className="w-full h-1 bg-border rounded-full appearance-none cursor-pointer accent-amber-500
-                  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
-                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500" />
-              <div className="text-xs text-text-muted mt-1 text-center">(Pitch shift requires Web Audio)</div>
-            </div>
+            )}
           </div>
 
-          {/* ── Sections ── */}
-          <div>
-            <h3 className="text-xs uppercase tracking-widest text-text-muted mb-3">Sections</h3>
+          {videoSrc && (
+            <>
+              {/* ── Timeline ── */}
+              <div>
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mr-auto">
+                    <button
+                      onClick={markLoopStart}
+                      className="px-3 py-1 rounded-md text-[11px] border border-amber-500/35 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-all"
+                    >
+                      Start loop
+                    </button>
+
+                    {loopStart !== null && loopEnd !== null && (
+                      <span className="px-2 py-1 text-[11px] tabular-nums text-amber-400/80">
+                        {formatTime(loopStart)} → {formatTime(loopEnd)}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-1.5 justify-end">
+                    {[-10, -5, -1, 1, 5, 10].map(step => (
+                      <button
+                        key={step}
+                        onClick={() => seekBy(step)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] tabular-nums border transition-all ${
+                          step > 0
+                            ? 'text-amber-400 border-amber-500/30 bg-amber-500/[0.05] hover:bg-amber-500/15'
+                            : 'text-text-muted border-border hover:text-text-primary hover:bg-surface-raised'
+                        }`}
+                      >
+                        {step > 0 ? `+${step}s` : `${step}s`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Track — click to seek, drag handles to adjust loop edges */}
+                <div
+                  ref={timelineRef}
+                  className="relative h-11 rounded-lg overflow-hidden bg-surface border border-border cursor-pointer select-none mb-2"
+                  onMouseDown={e => {
+                    e.preventDefault();
+                    if (e.button !== 0) return;
+                    if (!duration) return;
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const t = Math.max(0, Math.min(duration, ((e.clientX - rect.left) / rect.width) * duration));
+                    if (videoRef.current) videoRef.current.currentTime = t;
+                    setCurrentTime(t);
+                  }}
+                >
+                  {/* Played portion */}
+                  <div
+                    className="absolute top-0 left-0 h-full bg-white/[0.03] pointer-events-none"
+                    style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+                  />
+
+                  {/* Saved sections */}
+                  {sections.map(s => (
+                    <div
+                      key={s.id}
+                      className={`absolute top-0 h-full cursor-pointer transition-colors ${
+                        activeSection === s.id
+                          ? 'bg-sky-500/30 border-l-2 border-r-2 border-sky-400'
+                          : 'bg-surface-raised/50 border-l border-r border-border hover:bg-surface-raised'
+                      }`}
+                      style={{ left: `${(s.startTime / duration) * 100}%`, width: `${((s.endTime - s.startTime) / duration) * 100}%` }}
+                      onClick={e => { e.stopPropagation(); activateSection(s); }}
+                      title={s.name}
+                    />
+                  ))}
+
+                  {/* Active loop region + edge handles */}
+                  {loopStart !== null && loopEnd !== null && (
+                    <>
+                      {/* Fill — pointer-events-none so clicks through to timeline */}
+                      <div
+                        className="absolute top-0 h-full bg-amber-500/20 pointer-events-none"
+                        style={{ left: `${(loopStart / duration) * 100}%`, width: `${((loopEnd - loopStart) / duration) * 100}%` }}
+                      />
+                      {/* Left (start) handle */}
+                      <div
+                        className="absolute top-0 h-full w-2 -translate-x-1/2 cursor-ew-resize z-10 flex items-center justify-center hover:scale-x-150 transition-transform"
+                        style={{ left: `${(loopStart / duration) * 100}%` }}
+                        onMouseDown={e => { e.preventDefault(); e.stopPropagation(); dragModeRef.current = 'start'; }}
+                      >
+                        <div className="w-0.5 h-5/6 rounded-full bg-amber-400" />
+                      </div>
+                      {/* Right (end) handle */}
+                      <div
+                        className="absolute top-0 h-full w-2 -translate-x-1/2 cursor-ew-resize z-10 flex items-center justify-center hover:scale-x-150 transition-transform"
+                        style={{ left: `${(loopEnd / duration) * 100}%` }}
+                        onMouseDown={e => { e.preventDefault(); e.stopPropagation(); dragModeRef.current = 'end'; }}
+                      >
+                        <div className="w-0.5 h-5/6 rounded-full bg-amber-400" />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Playhead */}
+                  <div
+                    className="absolute top-0 w-px h-full bg-white/50 pointer-events-none"
+                    style={{ left: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+                  />
+                </div>
+
+                {/* Loop mark controls */}
+                {loopStart !== null && (
+                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                    {loopEnd === null && (
+                      <>
+                        <span className="text-xs text-amber-400/70 tabular-nums">
+                          start {formatTime(loopStart)}
+                        </span>
+                        <button
+                          onClick={markLoopEnd}
+                          className="px-3 py-1.5 rounded-lg text-xs border border-amber-500/35 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-all"
+                        >
+                          Finish loop
+                        </button>
+                        <button
+                          onClick={clearLoop}
+                          className="px-2.5 py-1.5 rounded-lg text-xs border border-border text-text-muted hover:text-text-primary hover:bg-surface-raised transition-all"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    )}
+
+                  </div>
+                )}
+
+                {/* Time row */}
+                <div className="flex items-center justify-between text-xs text-text-muted tabular-nums">
+                  <span>{formatTime(currentTime)}</span>
+                  {!(loopStart !== null && loopEnd !== null) && (
+                    <span className="text-text-muted/40 text-[10px]">click to seek · use Start/Finish loop</span>
+                  )}
+                  <span>{formatTime(duration)}</span>
+                </div>
+              </div>
+
+              {/* Transport */}
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <button onClick={() => seekBy(-5)}
+                  className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-raised transition-all">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12.5 8V4L6 9.5l6.5 5.5v-4c3.5 0 6.5 1.5 8 5-1-4.5-4-8-8-8z" />
+                  </svg>
+                </button>
+
+                <button onClick={togglePlay}
+                  className="w-14 h-14 rounded-full bg-amber-500 text-void flex items-center justify-center hover:bg-amber-400 transition-all">
+                  {isPlaying ? (
+                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="6" y="4" width="4" height="16" rx="1" />
+                      <rect x="14" y="4" width="4" height="16" rx="1" />
+                    </svg>
+                  ) : (
+                    <svg className="w-6 h-6 ml-0.5" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="6 3 20 12 6 21" />
+                    </svg>
+                  )}
+                </button>
+
+                <button onClick={() => seekBy(5)}
+                  className="p-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-surface-raised transition-all">
+                  <svg className="w-5 h-5 scale-x-[-1]" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12.5 8V4L6 9.5l6.5 5.5v-4c3.5 0 6.5 1.5 8 5-1-4.5-4-8-8-8z" />
+                  </svg>
+                </button>
+
+                {/* Loop toggle — only visible when a region exists */}
+                {loopStart !== null && loopEnd !== null && (
+                  <button
+                    onClick={() => setIsLooping(l => !l)}
+                    className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                      isLooping
+                        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40'
+                        : 'bg-surface-raised text-text-muted border border-border hover:text-text-primary'
+                    }`}
+                  >
+                    {isLooping ? '↻ Looping' : '↺ Loop off'}
+                  </button>
+                )}
+              </div>
+
+            </>
+          )}
+        </div>
+
+        {videoSrc && (
+          <aside className="rounded-xl border border-border bg-surface/80 p-4 xl:sticky xl:top-6 xl:max-h-[calc(100dvh-8rem)] xl:overflow-y-auto">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs uppercase tracking-widest text-text-muted">Sections</h3>
+              <span className="text-[10px] text-text-muted tabular-nums">{sections.length}</span>
+            </div>
 
             {/* Save loop as section — appears when a loop region is active */}
             {loopStart !== null && loopEnd !== null && (
-              <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                <span className="text-xs text-amber-400/70 tabular-nums shrink-0">
+              <div className="mb-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 space-y-2">
+                <span className="block text-xs text-amber-400/70 tabular-nums">
                   {formatTime(loopStart)} → {formatTime(loopEnd)}
                 </span>
                 <input
@@ -668,36 +698,39 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
                   value={newSectionName}
                   onChange={e => setNewSectionName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && saveSection()}
-                  className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none min-w-0"
+                  className="w-full bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none border border-border rounded px-2 py-1.5"
                 />
-                <button onClick={saveSection}
-                  className="px-2 py-1 rounded bg-amber-500/15 text-amber-400 text-xs hover:bg-amber-500/25 transition-all shrink-0">
-                  {activeSectionData ? 'Save Changes' : 'Save'}
-                </button>
-                <button onClick={clearLoop} className="p-1 text-text-muted hover:text-text-primary transition-colors shrink-0">
-                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                    <path d="M18 6L6 18M6 6l12 12" />
-                  </svg>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button onClick={saveSection}
+                    className="px-2.5 py-1 rounded bg-amber-500/15 text-amber-400 text-xs hover:bg-amber-500/25 transition-all shrink-0">
+                    {activeSectionData ? 'Save Changes' : 'Save'}
+                  </button>
+                  <button onClick={clearLoop}
+                    className="px-2.5 py-1 rounded border border-border text-xs text-text-muted hover:text-text-primary hover:bg-surface-raised transition-all shrink-0">
+                    Clear
+                  </button>
+                </div>
               </div>
             )}
 
             {sections.length > 0 ? (
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {sections.map(section => (
                   <div
                     key={section.id}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all group ${
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all group ${
                       activeSection === section.id
                         ? 'bg-sky-500/10 border border-sky-500/20'
-                        : 'hover:bg-surface-raised'
+                        : 'hover:bg-surface-raised border border-transparent'
                     }`}
                     onClick={() => activateSection(section)}
                   >
-                    <span className="text-sm text-text-primary">{section.name}</span>
-                    <span className="text-xs text-text-muted tabular-nums">
-                      {formatTime(section.startTime)} → {formatTime(section.endTime)}
-                    </span>
+                    <div className="min-w-0">
+                      <div className="text-sm text-text-primary truncate">{section.name}</div>
+                      <div className="text-xs text-text-muted tabular-nums">
+                        {formatTime(section.startTime)} → {formatTime(section.endTime)}
+                      </div>
+                    </div>
                     <button
                       onClick={e => { e.stopPropagation(); deleteSection(section.id); }}
                       className="ml-auto opacity-0 group-hover:opacity-100 p-1 text-text-muted hover:text-red-400 transition-all"
@@ -714,9 +747,9 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
                 Use Start loop and Finish loop to mark a region, then save it as a section
               </div>
             )}
-          </div>
-        </>
-      )}
+          </aside>
+        )}
+      </div>
     </div>
   );
 }
