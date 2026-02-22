@@ -1,0 +1,121 @@
+{
+  "id": "routine-c",
+  "name": "C",
+  "label": "Routine C",
+  "description": "Speed drills, expressive techniques & structured soloing",
+  "color": "#f59e0b",
+  "isDefault": true,
+  "createdAt": "2025-01-01T00:00:00.000Z",
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "sets": [
+    {
+      "id": "c-set-1",
+      "number": 1,
+      "name": "Technical Facility & Proficiency",
+      "type": "timed-exercises",
+      "totalDuration": 10,
+      "exercises": [
+        {
+          "id": "c1-altpicking",
+          "name": "Alternate Picking Bursts",
+          "duration": 3,
+          "description": "Endurance exercise: Pick as fast as you can for 20 seconds, rest 10 seconds. Repeat.",
+          "instructions": "This is about building speed endurance. Go all-out for 20 seconds, then recover for 10. Repeat for the full 3 minutes."
+        },
+        {
+          "id": "c1-pentatonic",
+          "name": "Pentatonic Sequences",
+          "duration": 3,
+          "description": "Practice pentatonic scale sequences (groups of 3, 4, etc.)",
+          "instructions": "Run through ascending/descending sequences in pentatonic patterns."
+        },
+        {
+          "id": "c1-playerlicks",
+          "name": "Player Licks",
+          "duration": 4,
+          "description": "Learn licks from: Steve Vai, Joe Satriani, John Mayer, Eric Johnson, SRV, etc.",
+          "instructions": "Pick a player and work on one of their signature licks. Focus on the nuances that make it theirs."
+        }
+      ]
+    },
+    {
+      "id": "c-set-2",
+      "number": 2,
+      "name": "Vocabulary",
+      "type": "pick-one",
+      "totalDuration": 10,
+      "exercises": [
+        {
+          "id": "c2-callresponse",
+          "name": "Motivic Call and Response",
+          "duration": 10,
+          "description": "Play a phrase, then respond to it with a complementary phrase",
+          "instructions": "Focus on tone and control. Be very deliberate."
+        },
+        {
+          "id": "c2-rakes",
+          "name": "Chord Rakes & Ghost Notes",
+          "duration": 10,
+          "description": "Practice chord rake techniques and ghost note incorporation",
+          "instructions": "Focus on dynamics and the percussive quality of the rakes."
+        },
+        {
+          "id": "c2-percussive",
+          "name": "Playing Percussively",
+          "duration": 10,
+          "description": "Use the guitar as a percussive instrument in your playing",
+          "instructions": "Muted slaps, taps, and rhythmic techniques combined with melodic content."
+        },
+        {
+          "id": "c2-minorpent",
+          "name": "Minor Pentatonic Bends & Melodic Restraint",
+          "duration": 10,
+          "description": "Practice expressive bending within minor pentatonic with restraint",
+          "instructions": "Less is more. Focus on making each bend count."
+        },
+        {
+          "id": "c2-wideintervals",
+          "name": "Wide Interval Motifs",
+          "duration": 10,
+          "description": "Create and practice motifs using wide intervals (5ths, 6ths, octaves+)",
+          "instructions": "Practice jumping large intervals cleanly. Build musical phrases around these leaps."
+        }
+      ]
+    },
+    {
+      "id": "c-set-3",
+      "number": 3,
+      "name": "Application",
+      "type": "timed-exercises",
+      "totalDuration": 10,
+      "exercises": [
+        {
+          "id": "c3-slowblues",
+          "name": "Slow Blues: Long Notes",
+          "duration": 4,
+          "description": "Play over a slow blues track (70-80 BPM) focusing on long notes only",
+          "instructions": "Let notes ring. Focus on tone, vibrato, and letting the spaces breathe.",
+          "useBackingTrack": true,
+          "bpm": { "min": 70, "max": 80 }
+        },
+        {
+          "id": "c3-fastrock",
+          "name": "Fast Rock: Motivic Development",
+          "duration": 3,
+          "description": "Play over a faster rock track (100+ BPM) focusing on motivic development",
+          "instructions": "Start with a simple motif and develop it over the course of the exercise.",
+          "useBackingTrack": true,
+          "bpm": { "min": 100, "max": 140 }
+        },
+        {
+          "id": "c3-onetake",
+          "name": "One-Take Solo",
+          "duration": 3,
+          "description": "Play a single solo for the entire 3 minutes. Record if you can.",
+          "instructions": "Be mindful of phrasing and cadencing. Create a theme and develop it. The solo should have a clear start, middle, and end. Record if possible to evaluate from a third-person perspective.",
+          "useBackingTrack": true
+        }
+      ]
+    }
+  ]
+}

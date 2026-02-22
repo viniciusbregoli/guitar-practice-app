@@ -1,0 +1,126 @@
+{
+  "id": "routine-a",
+  "name": "A",
+  "label": "Routine A",
+  "description": "Technical facility, vocabulary building & application over backing tracks",
+  "color": "#4ade80",
+  "isDefault": true,
+  "createdAt": "2025-01-01T00:00:00.000Z",
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "sets": [
+    {
+      "id": "a-set-1",
+      "number": 1,
+      "name": "Technical Facility & Proficiency",
+      "type": "timed-exercises",
+      "totalDuration": 10,
+      "exercises": [
+        {
+          "id": "a1-legato",
+          "name": "Legato Warmup",
+          "duration": 2,
+          "description": "3 note per string sequences, slow pace, focus on clarity",
+          "instructions": "Play legato patterns across all 6 strings. Hammer-ons and pull-offs should be clean and even in volume."
+        },
+        {
+          "id": "a1-stringskip",
+          "name": "String-skipping Pentatonic Patterns",
+          "duration": 4,
+          "description": "Practice pentatonic scale patterns with string skipping",
+          "instructions": "Skip strings while navigating pentatonic shapes. Focus on accuracy over speed."
+        },
+        {
+          "id": "a1-bends",
+          "name": "Bend Accuracy",
+          "duration": 4,
+          "description": "Play destination note, then bend up to it. Try to add vibrato on top.",
+          "instructions": "First play the target note clean, then bend to match it from below. Add vibrato once you nail the pitch."
+        }
+      ]
+    },
+    {
+      "id": "a-set-2",
+      "number": 2,
+      "name": "Vocabulary",
+      "type": "pick-one",
+      "totalDuration": 10,
+      "exercises": [
+        {
+          "id": "a2-doublestops",
+          "name": "Double-Stops",
+          "duration": 10,
+          "description": "Practice double-stop patterns and licks",
+          "instructions": "Work on 2-3 double-stop licks. Focus on timing, intonation and dynamics."
+        },
+        {
+          "id": "a2-boxconnection",
+          "name": "Box Connection Licks",
+          "duration": 10,
+          "description": "Licks that connect pentatonic box positions",
+          "instructions": "Practice licks that smoothly move between adjacent pentatonic boxes."
+        },
+        {
+          "id": "a2-turnarounds",
+          "name": "ii-V-I Turnarounds",
+          "duration": 10,
+          "description": "Practice ii-V-I chord progression turnaround licks",
+          "instructions": "Work on turnaround phrases. Focus on voice leading and smooth resolution."
+        },
+        {
+          "id": "a2-sixths",
+          "name": "Sliding 6ths",
+          "duration": 10,
+          "description": "Practice sliding 6th interval patterns",
+          "instructions": "Play 6th intervals on adjacent string pairs, sliding up and down the neck."
+        },
+        {
+          "id": "a2-bluenote",
+          "name": "Blue Note Insertion",
+          "duration": 10,
+          "description": "Practice inserting blue notes (b5) into pentatonic phrases",
+          "instructions": "Add the flat-5 chromatic passing tone into your pentatonic licks for that blues flavour."
+        }
+      ]
+    },
+    {
+      "id": "a-set-3",
+      "number": 3,
+      "name": "Application",
+      "type": "pick-one",
+      "totalDuration": 10,
+      "exercises": [
+        {
+          "id": "a3-bends-vibrato",
+          "name": "Solo: Bends + Vibrato Only",
+          "duration": 10,
+          "description": "Solo over a backing track using only bends and vibrato",
+          "instructions": "Limit yourself to bends and vibrato as your primary expression tools.",
+          "useBackingTrack": true
+        },
+        {
+          "id": "a3-slides-doubles",
+          "name": "Solo: Sliding + Double Stops Only",
+          "duration": 10,
+          "description": "Solo over a backing track using only slides and double stops",
+          "useBackingTrack": true
+        },
+        {
+          "id": "a3-single-string",
+          "name": "Solo: Single String Only",
+          "duration": 10,
+          "description": "Solo using only one string at a time. Switch strings every ~2 minutes.",
+          "instructions": "Force yourself to explore the entire range of a single string before switching.",
+          "useBackingTrack": true
+        },
+        {
+          "id": "a3-phrasing",
+          "name": "Lyrical Phrasing",
+          "duration": 10,
+          "description": "Solo with a focus on making it 'lyrical'. Think singer or saxophonist.",
+          "instructions": "Be deliberate about melodic range, spacing, and note length. Rests are golden. Be mindful of syncopation. Place notes purposefully.",
+          "useBackingTrack": true
+        }
+      ]
+    }
+  ]
+}

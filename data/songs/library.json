@@ -1,0 +1,24 @@
+{
+  "songs": [
+    {
+      "id": "3df903b1-cb6a-4428-a0a3-ab81c5161164",
+      "title": "Wayward son",
+      "artist": "Kansas",
+      "tuning": "Standard",
+      "difficulty": 3,
+      "sections": [
+        {
+          "id": "8d9ab34e-efa2-449e-b073-e0b08d0dcecd",
+          "name": "intro 1",
+          "startTime": 28.468024090985615,
+          "endTime": 41.1813700029353,
+          "mastered": false
+        }
+      ],
+      "tags": [],
+      "addedAt": "2026-02-22T17:33:04.168Z",
+      "practiceCount": 0
+    }
+  ],
+  "updatedAt": "2026-02-22T17:52:33.465Z"
+}

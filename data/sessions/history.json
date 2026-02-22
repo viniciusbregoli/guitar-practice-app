@@ -1,0 +1,48 @@
+{
+  "sessions": [
+    {
+      "id": "f59fd32b-51f1-43fd-bf6d-fbee146c1929",
+      "type": "routine",
+      "startTime": "2026-02-22T18:00:49.562Z",
+      "endTime": "2026-02-22T18:02:02.545Z",
+      "duration": 1,
+      "routineId": "routine-a",
+      "routineName": "A",
+      "selectedScale": "A Minor Pentatonic",
+      "completedExercises": [
+        {
+          "exerciseId": "a1-legato",
+          "exerciseName": "Legato Warmup",
+          "setNumber": 1,
+          "duration": 2,
+          "completed": false,
+          "skipped": true
+        },
+        {
+          "exerciseId": "a1-stringskip",
+          "exerciseName": "String-skipping Pentatonic Patterns",
+          "setNumber": 1,
+          "duration": 4,
+          "completed": true,
+          "skipped": false
+        },
+        {
+          "exerciseId": "a1-bends",
+          "exerciseName": "Bend Accuracy",
+          "setNumber": 1,
+          "duration": 4,
+          "completed": true,
+          "skipped": false
+        },
+        {
+          "exerciseId": "a2-boxconnection",
+          "exerciseName": "Box Connection Licks",
+          "setNumber": 2,
+          "duration": 10,
+          "completed": true,
+          "skipped": false
+        }
+      ]
+    }
+  ]
+}

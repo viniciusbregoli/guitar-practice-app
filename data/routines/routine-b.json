@@ -1,0 +1,99 @@
+{
+  "id": "routine-b",
+  "name": "B",
+  "label": "Routine B",
+  "description": "Chord work, ear training, rhythmic accuracy & rhythm playing",
+  "color": "#60a5fa",
+  "isDefault": true,
+  "createdAt": "2025-01-01T00:00:00.000Z",
+  "updatedAt": "2025-01-01T00:00:00.000Z",
+  "sets": [
+    {
+      "id": "b-set-1",
+      "number": 1,
+      "name": "Technical Facility & Proficiency",
+      "type": "timed-exercises",
+      "totalDuration": 10,
+      "exercises": [
+        {
+          "id": "b1-chords",
+          "name": "Chord Embellishments",
+          "duration": 4,
+          "description": "Legato figures on Dominant 7 chords",
+          "instructions": "Practice adding hammer-ons, pull-offs, and other embellishments to dominant 7th chord voicings."
+        },
+        {
+          "id": "b1-triads",
+          "name": "Triad Inversions",
+          "duration": 3,
+          "description": "Triads and their inversions on one string set. Progression practice.",
+          "instructions": "Pick a string group (e.g., D-G-B) and play through triad inversions of a chord progression."
+        },
+        {
+          "id": "b1-rhythm",
+          "name": "Rhythmic Accuracy",
+          "duration": 3,
+          "description": "Set metronome to comfortable 16th note speed. Practice accents.",
+          "instructions": "Play muted 16th notes and shift the accent pattern. See the PDF accent exercise patterns.",
+          "useMetronome": true,
+          "bpm": { "min": 60, "max": 100 }
+        }
+      ]
+    },
+    {
+      "id": "b-set-2",
+      "number": 2,
+      "name": "Vocabulary",
+      "type": "timed-exercises",
+      "totalDuration": 10,
+      "exercises": [
+        {
+          "id": "b2-singplay",
+          "name": "Sing & Play",
+          "duration": 3,
+          "description": "Sing or hum a phrase and try to play it",
+          "instructions": "Pay close attention to the guitar neck. Try to predict where the notes are before finding them."
+        },
+        {
+          "id": "b2-motifs",
+          "name": "3-Note Melodic Motifs",
+          "duration": 3,
+          "description": "Play a motivic phrase and try to shift it around the neck",
+          "instructions": "Create a simple 3-note motif, then transpose it to different positions and keys."
+        },
+        {
+          "id": "b2-pentatonic",
+          "name": "Pentatonic Major/Minor Switches",
+          "duration": 4,
+          "description": "Practice switching between Major and Minor pentatonic scales",
+          "instructions": "Over a static chord, alternate between major and minor pentatonic to hear the tonal shift."
+        }
+      ]
+    },
+    {
+      "id": "b-set-3",
+      "number": 3,
+      "name": "Application",
+      "type": "timed-exercises",
+      "totalDuration": 10,
+      "exercises": [
+        {
+          "id": "b3-rhythm",
+          "name": "R&B/Funk/Soul Rhythm Playing",
+          "duration": 5,
+          "description": "Practice playing rhythm to R&B, Funk and Soul backing tracks",
+          "instructions": "The switch to a rhythm-focused style will be much more efficient than rock. Focus on groove, ghost notes, and feel.",
+          "useBackingTrack": true
+        },
+        {
+          "id": "b3-fills",
+          "name": "Vocal Fill Creation",
+          "duration": 5,
+          "description": "Listen to songs (ideally non-guitar focused) and create fills between vocal lines",
+          "instructions": "Don't just imitate the vocal line. Respond to it, complement it. Think conversation, not imitation.",
+          "useBackingTrack": true
+        }
+      ]
+    }
+  ]
+}

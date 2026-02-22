@@ -1,0 +1,16 @@
+{
+  "defaultScale": "A Minor Pentatonic",
+  "defaultBPM": 80,
+  "metronomeSound": "click",
+  "autoAdvanceExercises": true,
+  "warningBeforeEnd": 5,
+  "theme": "dark",
+  "backingTracks": [
+    {
+      "id": "ejt-blues-a",
+      "name": "Blues in A - Elevated Jam Tracks",
+      "scale": "A Blues",
+      "youtubeUrl": "https://www.youtube.com/@ElevatedJamTracks"
+    }
+  ]
+}
