@@ -178,8 +178,7 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
-  const dragStartRef = useRef<number | null>(null);
-  const dragModeRef = useRef<'new' | 'start' | 'end' | null>(null);
+  const dragModeRef = useRef<'start' | 'end' | null>(null);
   // Refs that mirror loop state — avoids stale closures in the global effect
   const loopStartRef = useRef<number | null>(null);
   const loopEndRef = useRef<number | null>(null);
@@ -196,12 +195,12 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
   const [loopStart, setLoopStart] = useState<number | null>(null);
   const [loopEnd, setLoopEnd] = useState<number | null>(null);
   const [isLooping, setIsLooping] = useState(false);
-  const [dragPreview, setDragPreview] = useState<{ start: number; end: number } | null>(null);
 
   // Sections
   const [sections, setSections] = useState<SongSection[]>(song.sections);
   const [newSectionName, setNewSectionName] = useState('');
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const activeSectionData = activeSection ? sections.find(s => s.id === activeSection) ?? null : null;
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -267,20 +266,17 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
         const newStart = Math.min(t, (loopEndRef.current ?? duration) - 0.1);
         loopStartRef.current = newStart;
         setLoopStart(newStart);
-      } else if (mode === 'end') {
+        return;
+      }
+
+      if (mode === 'end') {
         const newEnd = Math.max(t, (loopStartRef.current ?? 0) + 0.1);
         loopEndRef.current = newEnd;
         setLoopEnd(newEnd);
-      } else {
-        // 'new' — show drag preview
-        if (dragStartRef.current === null) return;
-        const start = Math.min(dragStartRef.current, t);
-        const end = Math.max(dragStartRef.current, t);
-        setDragPreview(end - start > 0.3 ? { start, end } : null);
       }
     };
 
-    const onMouseUp = (e: MouseEvent) => {
+    const onMouseUp = () => {
       const mode = dragModeRef.current;
       if (!mode) return;
       dragModeRef.current = null;
@@ -291,32 +287,6 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
         return;
       }
       if (mode === 'end') return;
-
-      // 'new' drag
-      if (dragStartRef.current === null) return;
-      const startTime = dragStartRef.current;
-      dragStartRef.current = null;
-      setDragPreview(null);
-
-      const t = getTime(e.clientX);
-      const start = Math.min(startTime, t);
-      const end = Math.max(startTime, t);
-
-      if (end - start < 0.3) {
-        // Click → seek and clear loop
-        if (videoRef.current) videoRef.current.currentTime = t;
-        setLoopStart(null); loopStartRef.current = null;
-        setLoopEnd(null); loopEndRef.current = null;
-        setIsLooping(false);
-        setActiveSection(null);
-      } else {
-        // Drag → create loop and start looping
-        setLoopStart(start); loopStartRef.current = start;
-        setLoopEnd(end); loopEndRef.current = end;
-        setIsLooping(true);
-        setActiveSection(null);
-        if (videoRef.current) videoRef.current.currentTime = start;
-      }
     };
 
     document.addEventListener('mousemove', onMouseMove);
@@ -335,8 +305,32 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
 
   const clearLoop = () => {
     setLoopStart(null);
+    loopStartRef.current = null;
     setLoopEnd(null);
+    loopEndRef.current = null;
     setIsLooping(false);
+    setActiveSection(null);
+    setNewSectionName('');
+  };
+
+  const markLoopStart = () => {
+    const t = videoRef.current?.currentTime ?? currentTime;
+    setLoopStart(t);
+    loopStartRef.current = t;
+    setLoopEnd(null);
+    loopEndRef.current = null;
+    setIsLooping(false);
+    setActiveSection(null);
+    setNewSectionName('');
+  };
+
+  const markLoopEnd = () => {
+    if (loopStart === null) return;
+    const t = videoRef.current?.currentTime ?? currentTime;
+    const end = Math.max(t, loopStart + 0.1);
+    setLoopEnd(end);
+    loopEndRef.current = end;
+    setIsLooping(true);
     setActiveSection(null);
   };
 
@@ -345,6 +339,7 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
     setLoopEnd(section.endTime);
     setIsLooping(true);
     setActiveSection(section.id);
+    setNewSectionName(section.name);
     if (videoRef.current) videoRef.current.currentTime = section.startTime;
   };
 
@@ -360,8 +355,27 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
     const updated = [...sections, section];
     setSections(updated);
     onUpdateSong({ ...song, sections: updated });
-    setNewSectionName('');
+    setNewSectionName(section.name);
     setActiveSection(section.id);
+  };
+
+  const updateActiveSection = () => {
+    if (!activeSectionData || loopStart === null || loopEnd === null) return;
+    const updatedName = newSectionName.trim() || activeSectionData.name;
+    const updated = sections.map(section => section.id === activeSectionData.id
+      ? { ...section, name: updatedName, startTime: loopStart, endTime: loopEnd }
+      : section);
+    setSections(updated);
+    onUpdateSong({ ...song, sections: updated });
+    setNewSectionName(updatedName);
+  };
+
+  const saveSection = () => {
+    if (activeSectionData) {
+      updateActiveSection();
+      return;
+    }
+    addSection();
   };
 
   const deleteSection = (id: string) => {
@@ -378,7 +392,7 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-6 pt-6 md:pt-10">
+    <div className="max-w-6xl mx-auto px-6 pt-6 md:pt-10">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button onClick={onBack} className="p-2 rounded-lg hover:bg-surface-raised text-text-muted hover:text-text-primary transition-all">
@@ -412,17 +426,18 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
         <>
           {/* ── Timeline ── */}
           <div className="mb-5">
-            {/* Track — drag to create loop, click to seek */}
+            {/* Track — click to seek, drag handles to adjust loop edges */}
             <div
               ref={timelineRef}
-              className="relative h-11 rounded-lg overflow-hidden bg-surface border border-border cursor-crosshair select-none mb-1"
+              className="relative h-11 rounded-lg overflow-hidden bg-surface border border-border cursor-pointer select-none mb-2"
               onMouseDown={e => {
                 e.preventDefault();
+                if (e.button !== 0) return;
                 if (!duration) return;
                 const rect = e.currentTarget.getBoundingClientRect();
                 const t = Math.max(0, Math.min(duration, ((e.clientX - rect.left) / rect.width) * duration));
-                dragModeRef.current = 'new';
-                dragStartRef.current = t;
+                if (videoRef.current) videoRef.current.currentTime = t;
+                setCurrentTime(t);
               }}
             >
               {/* Played portion */}
@@ -473,19 +488,47 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
                 </>
               )}
 
-              {/* Drag preview */}
-              {dragPreview && (
-                <div
-                  className="absolute top-0 h-full bg-amber-400/10 border-l border-r border-amber-400/50 pointer-events-none"
-                  style={{ left: `${(dragPreview.start / duration) * 100}%`, width: `${((dragPreview.end - dragPreview.start) / duration) * 100}%` }}
-                />
-              )}
-
               {/* Playhead */}
               <div
                 className="absolute top-0 w-px h-full bg-white/50 pointer-events-none"
                 style={{ left: `${duration ? (currentTime / duration) * 100 : 0}%` }}
               />
+            </div>
+
+            {/* Loop mark controls */}
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              <button
+                onClick={markLoopStart}
+                className="px-3 py-1.5 rounded-lg text-xs border border-amber-500/35 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-all"
+              >
+                Start loop
+              </button>
+
+              {loopStart !== null && loopEnd === null && (
+                <>
+                  <span className="text-xs text-amber-400/70 tabular-nums">
+                    start {formatTime(loopStart)}
+                  </span>
+                  <button
+                    onClick={markLoopEnd}
+                    className="px-3 py-1.5 rounded-lg text-xs border border-amber-500/35 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-all"
+                  >
+                    Finish loop
+                  </button>
+                  <button
+                    onClick={clearLoop}
+                    className="px-2.5 py-1.5 rounded-lg text-xs border border-border text-text-muted hover:text-text-primary hover:bg-surface-raised transition-all"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+
+              {loopStart !== null && loopEnd !== null && (
+                <span className="text-xs text-amber-400/70 tabular-nums">
+                  {formatTime(loopStart)} → {formatTime(loopEnd)}
+                </span>
+              )}
             </div>
 
             {/* Section name labels */}
@@ -511,7 +554,7 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
                   {isLooping ? '↻' : '↺'} {formatTime(loopStart)} → {formatTime(loopEnd)}
                 </span>
               ) : (
-                <span className="text-text-muted/40 text-[10px]">drag to loop · click to seek</span>
+                <span className="text-text-muted/40 text-[10px]">click to seek · use Start/Finish loop</span>
               )}
               <span>{formatTime(duration)}</span>
             </div>
@@ -624,12 +667,12 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
                   placeholder="Name this section…"
                   value={newSectionName}
                   onChange={e => setNewSectionName(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && addSection()}
+                  onKeyDown={e => e.key === 'Enter' && saveSection()}
                   className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none min-w-0"
                 />
-                <button onClick={addSection}
+                <button onClick={saveSection}
                   className="px-2 py-1 rounded bg-amber-500/15 text-amber-400 text-xs hover:bg-amber-500/25 transition-all shrink-0">
-                  Save
+                  {activeSectionData ? 'Save Changes' : 'Save'}
                 </button>
                 <button onClick={clearLoop} className="p-1 text-text-muted hover:text-text-primary transition-colors shrink-0">
                   <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -666,9 +709,9 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
                   </div>
                 ))}
               </div>
-            ) : !loopStart && (
+            ) : loopStart === null && loopEnd === null && (
               <div className="text-sm text-text-muted text-center py-6">
-                Drag on the timeline to mark a loop region, then save it as a section
+                Use Start loop and Finish loop to mark a region, then save it as a section
               </div>
             )}
           </div>

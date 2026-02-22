@@ -8,10 +8,17 @@
       "difficulty": 3,
       "sections": [
         {
-          "id": "8d9ab34e-efa2-449e-b073-e0b08d0dcecd",
-          "name": "intro 1",
-          "startTime": 28.468024090985615,
-          "endTime": 41.1813700029353,
+          "id": "613755ba-956c-463b-8b09-cca42705ee18",
+          "name": "solo 1",
+          "startTime": 33.88560686642558,
+          "endTime": 40.173419,
+          "mastered": false
+        },
+        {
+          "id": "a676fa86-1a93-4272-959c-7e053acaab52",
+          "name": "legato fudido",
+          "startTime": 32.132856463849095,
+          "endTime": 34.706859,
           "mastered": false
         }
       ],
@@ -20,5 +27,5 @@
       "practiceCount": 0
     }
   ],
-  "updatedAt": "2026-02-22T17:52:33.465Z"
+  "updatedAt": "2026-02-22T18:21:44.854Z"
 }
