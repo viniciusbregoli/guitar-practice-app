@@ -391,6 +391,40 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
     return `${m}:${String(s).padStart(2, '0')}`;
   };
 
+  const getTimelineLimit = () => {
+    const maxDuration = duration > 0 ? duration : (videoRef.current?.duration ?? 0);
+    return Number.isFinite(maxDuration) && maxDuration > 0 ? maxDuration : null;
+  };
+
+  const updateLoopStartSeconds = (rawValue: string) => {
+    if (loopStart === null || loopEnd === null || rawValue === '') return;
+    const parsed = Number(rawValue);
+    if (!Number.isFinite(parsed)) return;
+
+    const maxDuration = getTimelineLimit();
+    const bounded = maxDuration === null
+      ? Math.max(0, parsed)
+      : Math.max(0, Math.min(maxDuration, parsed));
+    const nextStart = Math.min(bounded, loopEnd - 0.1);
+
+    setLoopStart(nextStart);
+    loopStartRef.current = nextStart;
+  };
+
+  const updateLoopEndSeconds = (rawValue: string) => {
+    if (loopStart === null || loopEnd === null || rawValue === '') return;
+    const parsed = Number(rawValue);
+    if (!Number.isFinite(parsed)) return;
+
+    const maxDuration = getTimelineLimit();
+    const bounded = maxDuration === null
+      ? Math.max(loopStart + 0.1, parsed)
+      : Math.max(loopStart + 0.1, Math.min(maxDuration, parsed));
+
+    setLoopEnd(bounded);
+    loopEndRef.current = bounded;
+  };
+
   const seekBy = (seconds: number) => {
     const video = videoRef.current;
     const maxDuration = duration > 0 ? duration : (video?.duration ?? 0);
@@ -700,6 +734,34 @@ function SongPlayer({ song, onBack, onUpdateSong }: {
                   onKeyDown={e => e.key === 'Enter' && saveSection()}
                   className="w-full bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none border border-border rounded px-2 py-1.5"
                 />
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="space-y-1">
+                    <span className="text-[10px] uppercase tracking-widest text-text-muted">Start (s)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={duration > 0 ? duration : undefined}
+                      step={0.01}
+                      inputMode="decimal"
+                      value={loopStart.toFixed(2)}
+                      onChange={e => updateLoopStartSeconds(e.target.value)}
+                      className="w-full bg-transparent text-sm text-text-primary border border-border rounded px-2 py-1.5 focus:outline-none focus:border-amber-500/40"
+                    />
+                  </label>
+                  <label className="space-y-1">
+                    <span className="text-[10px] uppercase tracking-widest text-text-muted">End (s)</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={duration > 0 ? duration : undefined}
+                      step={0.01}
+                      inputMode="decimal"
+                      value={loopEnd.toFixed(2)}
+                      onChange={e => updateLoopEndSeconds(e.target.value)}
+                      className="w-full bg-transparent text-sm text-text-primary border border-border rounded px-2 py-1.5 focus:outline-none focus:border-amber-500/40"
+                    />
+                  </label>
+                </div>
                 <div className="flex items-center gap-2">
                   <button onClick={saveSection}
                     className="px-2.5 py-1 rounded bg-amber-500/15 text-amber-400 text-xs hover:bg-amber-500/25 transition-all shrink-0">
