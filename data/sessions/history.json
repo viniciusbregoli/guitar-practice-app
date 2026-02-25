@@ -43,6 +43,126 @@
           "skipped": false
         }
       ]
+    },
+    {
+      "id": "2b97c95b-9544-4680-9e47-19b2b8145e75",
+      "type": "routine",
+      "startTime": "2026-02-25T00:39:31.593Z",
+      "endTime": "2026-02-25T00:40:28.461Z",
+      "duration": 1,
+      "routineId": "routine-b",
+      "routineName": "B",
+      "selectedScale": "A Minor Pentatonic",
+      "completedExercises": [
+        {
+          "exerciseId": "b1-chords",
+          "exerciseName": "Chord Embellishments",
+          "setNumber": 1,
+          "duration": 4,
+          "completed": false,
+          "skipped": true
+        },
+        {
+          "exerciseId": "b1-triads",
+          "exerciseName": "Triad Inversions",
+          "setNumber": 1,
+          "duration": 3,
+          "completed": false,
+          "skipped": true
+        },
+        {
+          "exerciseId": "b1-rhythm",
+          "exerciseName": "Rhythmic Accuracy",
+          "setNumber": 1,
+          "duration": 3,
+          "completed": false,
+          "skipped": true
+        },
+        {
+          "exerciseId": "b2-singplay",
+          "exerciseName": "Sing & Play",
+          "setNumber": 2,
+          "duration": 3,
+          "completed": false,
+          "skipped": true
+        },
+        {
+          "exerciseId": "b2-motifs",
+          "exerciseName": "3-Note Melodic Motifs",
+          "setNumber": 2,
+          "duration": 3,
+          "completed": false,
+          "skipped": true
+        },
+        {
+          "exerciseId": "b2-pentatonic",
+          "exerciseName": "Pentatonic Major/Minor Switches",
+          "setNumber": 2,
+          "duration": 4,
+          "completed": false,
+          "skipped": true
+        }
+      ]
+    },
+    {
+      "id": "4ef1de87-6f2c-484b-8b15-dc060df7297b",
+      "type": "routine",
+      "startTime": "2026-02-25T00:59:11.315Z",
+      "endTime": "2026-02-25T00:59:36.305Z",
+      "duration": 0,
+      "routineId": "routine-b",
+      "routineName": "B",
+      "selectedScale": "A Minor Pentatonic",
+      "completedExercises": [
+        {
+          "exerciseId": "b1-chords",
+          "exerciseName": "Chord Embellishments",
+          "setNumber": 1,
+          "duration": 4,
+          "completed": true,
+          "skipped": false
+        },
+        {
+          "exerciseId": "b1-triads",
+          "exerciseName": "Triad Inversions",
+          "setNumber": 1,
+          "duration": 3,
+          "completed": true,
+          "skipped": false
+        },
+        {
+          "exerciseId": "b1-rhythm",
+          "exerciseName": "Rhythmic Accuracy",
+          "setNumber": 1,
+          "duration": 3,
+          "completed": false,
+          "skipped": true
+        },
+        {
+          "exerciseId": "b2-singplay",
+          "exerciseName": "Sing & Play",
+          "setNumber": 2,
+          "duration": 3,
+          "completed": false,
+          "skipped": true
+        },
+        {
+          "exerciseId": "b2-motifs",
+          "exerciseName": "3-Note Melodic Motifs",
+          "setNumber": 2,
+          "duration": 3,
+          "completed": false,
+          "skipped": true
+        },
+        {
+          "exerciseId": "b2-pentatonic",
+          "exerciseName": "Pentatonic Major/Minor Switches",
+          "setNumber": 2,
+          "duration": 4,
+          "completed": false,
+          "skipped": true
+        }
+      ]
     }
   ]
 }

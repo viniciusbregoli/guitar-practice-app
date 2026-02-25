@@ -11,6 +11,12 @@ import type { PracticeSession, CompletedExercise } from '../types/session';
 
 type Phase = 'setup' | 'active' | 'complete';
 
+type SessionStep = {
+  key: string;
+  setNumber: number;
+  exerciseId?: string;
+};
+
 export function PracticePage() {
   const [searchParams] = useSearchParams();
   const [routines, setRoutines] = useState<Routine[]>([]);
@@ -45,6 +51,43 @@ export function PracticePage() {
     : currentSet?.exercises[currentExerciseIndex];
 
   const exerciseDuration = (currentExercise?.duration ?? 0) * 60;
+  const canGoBack = completedExercises.length > 0 || (currentSet?.type === 'pick-one' && pickedExercise !== null);
+
+  const sessionSteps: SessionStep[] = selectedRoutine
+    ? selectedRoutine.sets.flatMap((set) => {
+        if (set.type === 'pick-one') {
+          return [{ key: `set-${set.id}`, setNumber: set.number }];
+        }
+        return set.exercises.map((exercise) => ({
+          key: `exercise-${exercise.id}`,
+          setNumber: set.number,
+          exerciseId: exercise.id,
+        }));
+      })
+    : [];
+
+  const completedByStep = new Map<string, CompletedExercise>();
+  if (selectedRoutine) {
+    for (const entry of completedExercises) {
+      const set = selectedRoutine.sets.find(s => s.number === entry.setNumber);
+      if (!set) continue;
+      const key = set.type === 'pick-one' ? `set-${set.id}` : `exercise-${entry.exerciseId}`;
+      completedByStep.set(key, entry);
+    }
+  }
+
+  const currentStepKey = (() => {
+    if (!currentSet) return null;
+    if (currentSet.type === 'pick-one') return `set-${currentSet.id}`;
+    const current = currentSet.exercises[currentExerciseIndex];
+    if (!current) return null;
+    return `exercise-${current.id}`;
+  })();
+
+  const doneOrSkippedCount = sessionSteps.reduce((total, step) => (
+    completedByStep.has(step.key) ? total + 1 : total
+  ), 0);
+  const leftCount = Math.max(0, sessionSteps.length - doneOrSkippedCount);
 
   const handleExerciseComplete = useCallback(() => {
     if (!currentExercise || !currentSet) return;
@@ -100,6 +143,37 @@ export function PracticePage() {
     }
   }, [currentExercise, currentSet, currentExerciseIndex, advanceToNextSet]);
 
+  const goToPreviousExercise = useCallback(() => {
+    if (!selectedRoutine) return;
+
+    // If user is inside a pick-one set but hasn't progressed, go back to topic selection.
+    if (currentSet?.type === 'pick-one' && pickedExercise && completedExercises.length === 0) {
+      setPickedExercise(null);
+      return;
+    }
+
+    const lastCompleted = completedExercises[completedExercises.length - 1];
+    if (!lastCompleted) return;
+
+    const targetSetIndex = selectedRoutine.sets.findIndex(set => set.number === lastCompleted.setNumber);
+    if (targetSetIndex === -1) return;
+
+    const targetSet = selectedRoutine.sets[targetSetIndex];
+    setCurrentSetIndex(targetSetIndex);
+
+    if (targetSet.type === 'pick-one') {
+      const targetExercise = targetSet.exercises.find(ex => ex.id === lastCompleted.exerciseId) ?? null;
+      setPickedExercise(targetExercise);
+      setCurrentExerciseIndex(0);
+    } else {
+      const targetExerciseIndex = targetSet.exercises.findIndex(ex => ex.id === lastCompleted.exerciseId);
+      setCurrentExerciseIndex(targetExerciseIndex >= 0 ? targetExerciseIndex : 0);
+      setPickedExercise(null);
+    }
+
+    setCompletedExercises(prev => prev.slice(0, -1));
+  }, [selectedRoutine, currentSet, pickedExercise, completedExercises]);
+
   const finishSession = useCallback(async () => {
     setPhase('complete');
     const session: PracticeSession = {
@@ -123,7 +197,7 @@ export function PracticePage() {
   // ─── Setup Phase ───
   if (phase === 'setup') {
     return (
-      <div className="max-w-2xl mx-auto px-6 pt-8 md:pt-12">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 lg:px-8 pt-6 md:pt-10">
         <h1 className="font-display text-4xl text-text-primary mb-8">Session Setup</h1>
 
         {/* Routine selector */}
@@ -208,9 +282,26 @@ export function PracticePage() {
     // If pick-one and hasn't picked yet
     if (currentSet.type === 'pick-one' && !pickedExercise) {
       return (
-        <div className="max-w-2xl mx-auto px-6 pt-8 md:pt-12">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 lg:px-8 pt-6 md:pt-10">
           <SetHeader set={currentSet} routine={selectedRoutine!} />
-          <h2 className="text-xl text-text-primary mb-4">Pick a topic</h2>
+          <SessionProgressDots
+            steps={sessionSteps}
+            completedByStep={completedByStep}
+            currentStepKey={currentStepKey}
+            doneOrSkippedCount={doneOrSkippedCount}
+            leftCount={leftCount}
+          />
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h2 className="text-xl text-text-primary">Pick a topic</h2>
+            {canGoBack && (
+              <button
+                onClick={goToPreviousExercise}
+                className="px-3 py-1.5 rounded-lg text-xs border border-border text-text-muted hover:text-text-primary hover:bg-surface-raised transition-all"
+              >
+                Go Back
+              </button>
+            )}
+          </div>
           <div className="space-y-2">
             {currentSet.exercises.map(ex => (
               <button
@@ -232,20 +323,29 @@ export function PracticePage() {
     if (!currentExercise) return null;
 
     return (
-      <div className="px-6 pt-8 md:pt-12">
-        <div className="max-w-2xl mx-auto">
+      <div className="px-4 md:px-6 lg:px-8 pt-6 md:pt-10">
+        <div className="max-w-6xl mx-auto">
           <SetHeader set={currentSet} routine={selectedRoutine!} />
+          <SessionProgressDots
+            steps={sessionSteps}
+            completedByStep={completedByStep}
+            currentStepKey={currentStepKey}
+            doneOrSkippedCount={doneOrSkippedCount}
+            leftCount={leftCount}
+          />
           <ExercisePlayer
             key={currentExercise.id}
             exercise={currentExercise}
             durationSeconds={exerciseDuration}
+            canGoBack={canGoBack}
+            onBack={goToPreviousExercise}
             onComplete={handleExerciseComplete}
             onSkip={skipExercise}
             scale={selectedScale}
           />
         </div>
-        {/* Fretboard — full width, always visible */}
-        <div className="mt-8 max-w-5xl mx-auto">
+        {/* Fretboard - full width, always visible */}
+        <div className="mt-8 max-w-6xl mx-auto">
           <div className="p-4 rounded-xl bg-surface border border-border">
             <Fretboard root={selectedScale.split(' ')[0] as any} scalePattern={selectedScale.replace(/^[A-G]#?\s*/, '')} />
           </div>
@@ -256,7 +356,7 @@ export function PracticePage() {
 
   // ─── Complete Phase ───
   return (
-    <div className="max-w-2xl mx-auto px-6 pt-16 md:pt-24 text-center">
+    <div className="max-w-4xl mx-auto px-4 md:px-6 lg:px-8 pt-14 md:pt-20 text-center">
       <div className="text-6xl mb-4 font-display text-amber-400 glow-text">Done</div>
       <p className="text-text-secondary mb-2">
         Routine {selectedRoutine?.name} complete
@@ -297,15 +397,70 @@ function SetHeader({ set, routine }: { set: RoutineSet; routine: Routine }) {
   );
 }
 
+function SessionProgressDots({
+  steps,
+  completedByStep,
+  currentStepKey,
+  doneOrSkippedCount,
+  leftCount,
+}: {
+  steps: SessionStep[];
+  completedByStep: Map<string, CompletedExercise>;
+  currentStepKey: string | null;
+  doneOrSkippedCount: number;
+  leftCount: number;
+}) {
+  if (steps.length === 0) return null;
+
+  return (
+    <div className="mb-5">
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <span className="text-[10px] uppercase tracking-widest text-text-muted">Progress</span>
+        <span className="text-xs text-text-muted">
+          <span className="text-text-secondary">{doneOrSkippedCount}</span> done/skipped ·{' '}
+          <span className="text-text-secondary">{leftCount}</span> left
+        </span>
+      </div>
+      <div className="flex items-center flex-wrap gap-1.5">
+        {steps.map((step, index) => {
+          const entry = completedByStep.get(step.key);
+          const isCurrent = step.key === currentStepKey;
+          const stateClass = isCurrent
+            ? 'w-3.5 h-3.5 bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.45)]'
+            : entry
+              ? entry.skipped
+                ? 'w-2.5 h-2.5 bg-text-muted/70 border border-text-muted/60'
+                : 'w-2.5 h-2.5 bg-amber-500'
+              : 'w-2.5 h-2.5 bg-surface-raised border border-border';
+
+          const status = isCurrent ? 'Current' : entry ? (entry.skipped ? 'Skipped' : 'Completed') : 'Pending';
+
+          return (
+            <span
+              key={step.key}
+              className={`rounded-full transition-all duration-200 ${stateClass}`}
+              title={`Exercise ${index + 1}: ${status}`}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ExercisePlayer({
   exercise,
   durationSeconds,
+  canGoBack,
+  onBack,
   onComplete,
   onSkip,
   scale,
 }: {
   exercise: Exercise;
   durationSeconds: number;
+  canGoBack: boolean;
+  onBack: () => void;
   onComplete: () => void;
   onSkip: () => void;
   scale: string;
@@ -432,6 +587,16 @@ function ExercisePlayer({
 
       {/* Controls */}
       <div className="flex justify-center gap-4">
+        <button
+          onClick={onBack}
+          disabled={!canGoBack}
+          className="w-14 h-14 rounded-full bg-surface-raised border border-border flex items-center justify-center text-text-muted hover:text-text-primary hover:border-border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M11 6L3 12l8 6V6zm2 0h2v12h-2V6z" />
+          </svg>
+        </button>
+
         <button
           onClick={() => timer.isRunning ? timer.pause() : timer.start()}
           className="w-14 h-14 rounded-full bg-surface-raised border border-border flex items-center justify-center text-text-primary hover:border-amber-500/30 transition-all"

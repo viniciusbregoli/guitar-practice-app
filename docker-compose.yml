@@ -1,0 +1,21 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./data:/app/data
+      - ./videos:/app/videos
+    restart: unless-stopped
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    depends_on:
+      - server
+    ports:
+      - "5173:80"
+    restart: unless-stopped

@@ -10,6 +10,26 @@ A full-stack guitar practice app with:
 
 - Node.js 20+ (recommended)
 - npm
+- Docker + Docker Compose (optional)
+
+## Run With Docker
+
+From the repo root:
+
+```bash
+docker compose up --build
+```
+
+This starts both frontend and backend containers.
+
+- Frontend: `http://localhost:5173`
+- API: `http://localhost:3001`
+
+To stop:
+
+```bash
+docker compose down
+```
 
 ## Install
 
