@@ -1,21 +1,16 @@
 services:
-  server:
+  app:
     build:
       context: .
-      dockerfile: Dockerfile.server
+      dockerfile: Dockerfile
     ports:
       - "3001:3001"
+    environment:
+      PORT: 3001
+      BASIC_AUTH_USERNAME: ${BASIC_AUTH_USERNAME:-}
+      BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:-}
+      BASIC_AUTH_REALM: ${BASIC_AUTH_REALM:-Guitar Practice}
     volumes:
       - ./data:/app/data
       - ./videos:/app/videos
-    restart: unless-stopped
-
-  client:
-    build:
-      context: .
-      dockerfile: Dockerfile.client
-    depends_on:
-      - server
-    ports:
-      - "5173:80"
     restart: unless-stopped

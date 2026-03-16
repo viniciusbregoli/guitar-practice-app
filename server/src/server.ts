@@ -1,16 +1,92 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import { existsSync } from 'fs';
 import fs from 'fs/promises';
 import multer from 'multer';
+import crypto from 'crypto';
 
 const app = express();
-const PORT = 3001;
+const PORT = Number(process.env.PORT ?? 3001);
 const DATA_DIR = path.join(__dirname, '../../data');
+const DEFAULT_DATA_DIR = path.join(__dirname, '../../default-data');
 const VIDEOS_DIR = path.join(__dirname, '../../videos');
+const CLIENT_DIST_DIR = path.join(__dirname, '../../client/dist');
+const BASIC_AUTH_USERNAME = process.env.BASIC_AUTH_USERNAME;
+const BASIC_AUTH_PASSWORD = process.env.BASIC_AUTH_PASSWORD;
+const BASIC_AUTH_REALM = process.env.BASIC_AUTH_REALM ?? 'Guitar Practice';
+const basicAuthEnabled = Boolean(BASIC_AUTH_USERNAME && BASIC_AUTH_PASSWORD);
+
+if (Boolean(BASIC_AUTH_USERNAME) !== Boolean(BASIC_AUTH_PASSWORD)) {
+  console.warn('Basic auth is disabled because both BASIC_AUTH_USERNAME and BASIC_AUTH_PASSWORD must be set.');
+}
 
 app.use(cors());
 app.use(express.json());
+app.disable('x-powered-by');
+
+function safeCompare(value: string, expected: string): boolean {
+  const valueBuffer = Buffer.from(value);
+  const expectedBuffer = Buffer.from(expected);
+
+  if (valueBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(valueBuffer, expectedBuffer);
+}
+
+function parseBasicAuthHeader(header?: string): { username: string; password: string } | null {
+  if (!header?.startsWith('Basic ')) {
+    return null;
+  }
+
+  try {
+    const decoded = Buffer.from(header.slice(6), 'base64').toString('utf-8');
+    const separatorIndex = decoded.indexOf(':');
+
+    if (separatorIndex === -1) {
+      return null;
+    }
+
+    return {
+      username: decoded.slice(0, separatorIndex),
+      password: decoded.slice(separatorIndex + 1),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function requireBasicAuth(req: express.Request, res: express.Response, next: express.NextFunction): void {
+  if (!basicAuthEnabled) {
+    next();
+    return;
+  }
+
+  const credentials = parseBasicAuthHeader(req.headers.authorization);
+  const isAuthenticated = credentials
+    && safeCompare(credentials.username, BASIC_AUTH_USERNAME!)
+    && safeCompare(credentials.password, BASIC_AUTH_PASSWORD!);
+
+  if (isAuthenticated) {
+    next();
+    return;
+  }
+
+  res.setHeader('WWW-Authenticate', `Basic realm="${BASIC_AUTH_REALM}", charset="UTF-8"`);
+  res.status(401).send('Authentication required');
+}
+
+app.get('/health', (_req, res) => {
+  res.json({
+    status: 'ok',
+    authEnabled: basicAuthEnabled,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.use(requireBasicAuth);
 
 // Serve video files
 app.use('/videos', express.static(VIDEOS_DIR));
@@ -42,19 +118,56 @@ async function writeJSON(filePath: string, data: any): Promise<void> {
   await fs.writeFile(filePath, JSON.stringify(data, null, 2));
 }
 
+async function seedDirectory(sourceDir: string, targetDir: string): Promise<void> {
+  if (!existsSync(sourceDir)) {
+    return;
+  }
+
+  await fs.mkdir(targetDir, { recursive: true });
+  const entries = await fs.readdir(sourceDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const sourcePath = path.join(sourceDir, entry.name);
+    const targetPath = path.join(targetDir, entry.name);
+
+    if (entry.isDirectory()) {
+      await seedDirectory(sourcePath, targetPath);
+      continue;
+    }
+
+    try {
+      await fs.access(targetPath);
+    } catch {
+      await fs.copyFile(sourcePath, targetPath);
+    }
+  }
+}
+
+async function ensureRuntimeStorage(): Promise<void> {
+  await seedDirectory(DEFAULT_DATA_DIR, DATA_DIR);
+  await fs.mkdir(path.join(DATA_DIR, 'routines'), { recursive: true });
+  await fs.mkdir(VIDEOS_DIR, { recursive: true });
+}
+
 // ─── Routines ───
 
 app.get('/api/routines', async (_req, res) => {
   try {
-    const routinesDir = path.join(DATA_DIR, 'routines');
-    const files = await fs.readdir(routinesDir);
     const routines = [];
-    for (const file of files) {
-      if (file.endsWith('.json')) {
-        const data = await readJSON(path.join(routinesDir, file));
-        if (data) routines.push(data);
+    const routinesDir = path.join(DATA_DIR, 'routines');
+
+    try {
+      const files = await fs.readdir(routinesDir);
+      for (const file of files) {
+        if (file.endsWith('.json')) {
+          const data = await readJSON(path.join(routinesDir, file));
+          if (data) routines.push(data);
+        }
       }
+    } catch {
+      // routines dir may not exist yet
     }
+
     // Also read custom routines
     try {
       const customDir = path.join(routinesDir, 'custom');
@@ -180,8 +293,24 @@ app.post('/api/videos/upload', upload.single('video'), (req: any, res) => {
   res.json({ path: `/videos/${req.file.filename}` });
 });
 
+if (existsSync(CLIENT_DIST_DIR)) {
+  app.use(express.static(CLIENT_DIST_DIR));
+
+  app.get(/^(?!\/api(?:\/|$)|\/videos(?:\/|$)|\/health$).*/, (_req, res) => {
+    res.sendFile(path.join(CLIENT_DIST_DIR, 'index.html'));
+  });
+}
+
 // ─── Start ───
 
-app.listen(PORT, () => {
-  console.log(`Guitar Practice API running on http://localhost:${PORT}`);
-});
+ensureRuntimeStorage()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Guitar Practice server running on http://localhost:${PORT}`);
+      console.log(`Basic auth ${basicAuthEnabled ? 'enabled' : 'disabled'}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Failed to initialize runtime storage', error);
+    process.exit(1);
+  });
